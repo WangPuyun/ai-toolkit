@@ -1,0 +1,3 @@
+Version,Config,Steps,LR,LPIPS_Mean,Samples,LoRA_Checkpoint,Compared_To_v6,Decision,Notes
+v6,config/Flux2_lora_v6.json,2000,8e-5,0.206198,20/20,-,baseline,Initial config with linear=32,conv=16
+v7,config/Flux2_lora_v7.json,2500,8e-5,0.186803,20/20,output/Flux2_lora_v7/Flux2_lora_v7_000002000.safetensors,+9.5% better,Keep,Steps 2000→2500; loss still trending down at v6 end
