@@ -169,7 +169,7 @@ cython_debug/
 /.tmp
 /venv.bkp
 /venv.*
-/config/*
+# /config/*
 !/config/examples
 !/config/_PUT_YOUR_CONFIGS_HERE).txt
 /output/*
