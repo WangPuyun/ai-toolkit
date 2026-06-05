@@ -3,7 +3,12 @@ import glob
 import torch
 from PIL import Image
 from diffusers import Flux2KleinPipeline
+import cv2
+import numpy as np
 import lpips
+from torchmetrics.image.fid import FrechetInceptionDistance
+import insightface
+from insightface.app import FaceAnalysis
 
 def image_to_tensor(image):
     """
@@ -36,6 +41,11 @@ loss_fn = lpips.LPIPS(net="vgg").to(device)
 loss_fn.eval()
 
 total_lpips = 0.0
+total_arcface = 0.0
+fid = FrechetInceptionDistance(feature=2048).to(device)
+
+face_app = FaceAnalysis(name="antelopev2", providers=["CUDAExecutionProvider"])
+face_app.prepare(ctx_id=0, det_size=(640, 640))
 
 for txt_path in txt_files:
     stem = os.path.splitext(os.path.basename(txt_path))[0]
@@ -73,5 +83,28 @@ for txt_path in txt_files:
 
     total_lpips += score
 
-print(f"平均 LPIPS: {total_lpips / len(txt_files):.4f}")
+    image_uint8 = torch.from_numpy(np.array(image)).permute(2, 0, 1).unsqueeze(0).to(device)
+    target_uint8 = torch.from_numpy(np.array(target_image)).permute(2, 0, 1).unsqueeze(0).to(device)
+    fid.update(target_uint8, real=True)
+    fid.update(image_uint8, real=False)
+
+    gen_cv2 = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+    target_cv2 = cv2.cvtColor(np.array(target_image), cv2.COLOR_RGB2BGR)
+    gen_emb = face_app.get(gen_cv2)[0].embedding
+    target_emb = face_app.get(target_cv2)[0].embedding
+    cos_sim = np.dot(gen_emb, target_emb) / (np.linalg.norm(gen_emb) * np.linalg.norm(target_emb))
+    total_arcface += cos_sim
+    print(f"  ArcFace 余弦相似度: {cos_sim:.4f}")
+
+avg_lpips = total_lpips / len(txt_files)
+fid_score = fid.compute().item()
+avg_arcface = total_arcface / len(txt_files)
+
+print("\n" + "=" * 40)
+print(f"{'指标':<16}{'值':>20}")
+print("-" * 40)
+print(f"{'LPIPS ↓':<16}{avg_lpips:>20.4f}")
+print(f"{'FID ↓':<16}{fid_score:>20.4f}")
+print(f"{'ArcFace ↑':<16}{avg_arcface:>20.4f}")
+print("=" * 40)
 
