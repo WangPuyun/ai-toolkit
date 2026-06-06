@@ -25,11 +25,12 @@ def image_to_tensor(image):
 pipe = Flux2KleinPipeline.from_pretrained(
     "/root/autodl-tmp/models/flux-klein-base-4b", torch_dtype=torch.bfloat16
 )
-pipe.load_lora_weights("/root/autodl-tmp/ai-toolkit/output/Flux2_lora_v6_baseline/Flux2_lora_v6_baseline.safetensors")
+pipe.load_lora_weights("/root/autodl-tmp/ai-toolkit/output/Flux2_lora_v6_mask/Flux2_lora_v6_mask.safetensors")
 pipe.to("cuda")
 
 control1_dir = "/root/autodl-tmp/ai-toolkit/datasets/test_control1"
 control2_dir = "/root/autodl-tmp/ai-toolkit/datasets/test_control2"
+control3_dir = "/root/autodl-tmp/ai-toolkit/datasets/test_control3_mask"
 target_dir = "/root/autodl-tmp/ai-toolkit/datasets/test_target"
 output_dir = "/root/autodl-tmp/ai-toolkit/datasets/test_output"
 os.makedirs(output_dir, exist_ok=True)
@@ -51,6 +52,7 @@ for txt_path in txt_files:
     stem = os.path.splitext(os.path.basename(txt_path))[0]
     input_image_path = os.path.join(control1_dir, f"{stem}.png")
     background_image_path = os.path.join(control2_dir, f"{stem}.png")
+    control3_image_path = os.path.join(control3_dir, f"{stem}.png")
     target_image_path = os.path.join(target_dir, f"{stem}.png")
     output_path = os.path.join(output_dir, f"{stem}.png")
 
@@ -61,11 +63,12 @@ for txt_path in txt_files:
 
     input_image = Image.open(input_image_path).convert("RGB")
     background_image = Image.open(background_image_path).convert("RGB")
+    control3_image = Image.open(control3_image_path).convert("RGB")
     target_image = Image.open(target_image_path).convert("RGB")
 
     image = pipe(
         prompt=prompt,
-        image=[input_image, background_image],
+        image=[input_image, background_image, control3_image],
         num_inference_steps=50,
         guidance_scale=4.0,
     ).images[0]
