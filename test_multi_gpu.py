@@ -16,8 +16,7 @@ MODEL_PATH = "/root/autodl-tmp/models/flux-klein-base-4b"
 LORA_PATH = "/root/autodl-tmp/ai-toolkit/output/Flux2_lora_v6_mask/Flux2_lora_v6_mask.safetensors"
 
 CONTROL1_DIR = "/root/autodl-tmp/ai-toolkit/datasets/test_control1"
-CONTROL2_DIR = "/root/autodl-tmp/ai-toolkit/datasets/test_control2"
-CONTROL3_DIR = "/root/autodl-tmp/ai-toolkit/datasets/test_control3_mask"
+MASK_DIR = "/root/autodl-tmp/ai-toolkit/datasets/test_control3"
 TARGET_DIR = "/root/autodl-tmp/ai-toolkit/datasets/test_target"
 OUTPUT_DIR = "/root/autodl-tmp/ai-toolkit/datasets/test_output"
 
@@ -90,8 +89,7 @@ def run_worker(rank, world_size, txt_files):
     for txt_path in local_txt_files:
         stem = os.path.splitext(os.path.basename(txt_path))[0]
         input_image_path = os.path.join(CONTROL1_DIR, f"{stem}.png")
-        background_image_path = os.path.join(CONTROL2_DIR, f"{stem}.png")
-        control3_image_path = os.path.join(CONTROL3_DIR, f"{stem}.png")
+        mask_image_path = os.path.join(MASK_DIR, f"{stem}.png")
         target_image_path = os.path.join(TARGET_DIR, f"{stem}.png")
         output_path = os.path.join(OUTPUT_DIR, f"{stem}.png")
 
@@ -101,14 +99,13 @@ def run_worker(rank, world_size, txt_files):
         print(f"[rank {rank}] processing {stem} ...", flush=True)
 
         input_image = Image.open(input_image_path).convert("RGB")
-        background_image = Image.open(background_image_path).convert("RGB")
-        control3_image = Image.open(control3_image_path).convert("RGB")
+        mask_image = Image.open(mask_image_path).convert("RGB")
         target_image = Image.open(target_image_path).convert("RGB")
 
         with torch.inference_mode():
             image = pipe(
                 prompt=prompt,
-                image=[input_image, background_image, control3_image],
+                image=[input_image, mask_image],
                 num_inference_steps=NUM_INFERENCE_STEPS,
                 guidance_scale=GUIDANCE_SCALE,
             ).images[0]
