@@ -9,7 +9,7 @@ from diffusers import T2IAdapter, AutoencoderTiny, ControlNetModel
 import torch.functional as F
 from safetensors.torch import load_file
 from torch.utils.data import DataLoader, ConcatDataset
-
+from custom_loss_function import CustomLoss
 from toolkit import train_tools
 from toolkit.basic import value_map, adain, get_mean_std
 from toolkit.clip_vision_adapter import ClipVisionAdapter
@@ -82,6 +82,7 @@ class SDTrainer(BaseSDTrainProcess):
         self.diff_output_preservation_embeds: Optional[PromptEmbeds] = None
         
         self.dfe: Optional[DiffusionFeatureExtractor] = None
+        self.custom_loss = CustomLoss(mse_weight=1.0, l1_weight=1.0)
         self.unconditional_embeds = None
         
         if self.train_config.diff_output_preservation:
@@ -802,6 +803,8 @@ class SDTrainer(BaseSDTrainProcess):
                 loss = stepped_loss(pred, batch.latents, noise, noisy_latents, timesteps, self.sd.noise_scheduler)
                 # the way this loss works, it is low, increase it to match predictable LR effects
                 loss = loss * 10.0
+            elif self.train_config.loss_type == "custom_loss":
+                loss = self.custom_loss(pred, target)
             else:
                 loss = torch.nn.functional.mse_loss(pred.float(), target.float(), reduction="none")
                 
