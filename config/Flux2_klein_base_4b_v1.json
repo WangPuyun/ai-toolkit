@@ -1,7 +1,7 @@
 {
   "job": "extension",
   "config": {
-    "name": "Flux2_klein_base_9b_v1",
+    "name": "Flux2_klein_base_4b_v1",
     "process": [
       {
         "type": "diffusion_trainer",
@@ -92,12 +92,12 @@
           "use_ui_logger": true
         },
         "model": {
-          "name_or_path": "/root/autodl-tmp/models/flux-klein-base-9b",
+          "name_or_path": "/root/autodl-tmp/models/flux-klein-base-4b",
           "quantize": true,
           "qtype": "qfloat8",
           "quantize_te": true,
           "qtype_te": "qfloat8",
-          "arch": "flux2_klein_9b",
+          "arch": "flux2_klein_4b",
           "low_vram": true,
           "model_kwargs": {
             "match_target_res": false

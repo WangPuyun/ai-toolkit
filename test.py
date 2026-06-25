@@ -12,8 +12,8 @@ import insightface
 from insightface.app import FaceAnalysis
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model_path", type=str, default="/root/autodl-tmp/models/flux-klein-base-9b")
-parser.add_argument("--lora_path", type=str, default="/root/autodl-tmp/ai-toolkit/output/Flux2_klein_base_9b_v1/Flux2_klein_base_9b_v1_000001500.safetensors")
+parser.add_argument("--model_path", type=str, default="/root/autodl-tmp/models/flux-klein-base-4b")
+parser.add_argument("--lora_path", type=str, default="/root/autodl-tmp/ai-toolkit/output/Flux2_klein_base_4b_v1/Flux2_klein_base_4b_v1_000001500.safetensors")
 args = parser.parse_args()
 
 def image_to_tensor(image):
@@ -72,8 +72,8 @@ for txt_path in txt_files:
 
     image = pipe(
         prompt=prompt,
-        height=1664,
-        width=2496,
+        height=832,
+        width=1248,
         image=[input_image, mask_image],
         num_inference_steps=50,
         guidance_scale=4.0,
