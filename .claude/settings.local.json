@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "defaultMode": "dontAsk",
+    "skipDangerousModePermissionPrompt": true,
+    "allow": [
+      "mcp__codex__*",
+      "mcp__codex__codex",
+      "mcp__codex__codex-reply",
+      "Bash",
+      "PowerShell",
+      "Read",
+      "Edit",
+      "Write",
+      "NotebookEdit",
+      "WebFetch",
+      "WebSearch",
+      "Agent",
+      "Monitor",
+      "Skill",
+      "Workflow",
+      "Artifact",
+      "ExitPlanMode",
+      "ShareOnboardingGuide"
+    ]
+  }
+}
