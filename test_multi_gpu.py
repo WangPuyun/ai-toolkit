@@ -102,9 +102,12 @@ def run_worker(rank, world_size, txt_files):
         mask_image = Image.open(mask_image_path).convert("RGB")
         target_image = Image.open(target_image_path).convert("RGB")
 
+        width, height = input_image.size
         with torch.inference_mode():
             image = pipe(
                 prompt=prompt,
+                height=height,
+                width=width,
                 image=[input_image, mask_image],
                 num_inference_steps=NUM_INFERENCE_STEPS,
                 guidance_scale=GUIDANCE_SCALE,

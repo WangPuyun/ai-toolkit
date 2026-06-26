@@ -70,10 +70,11 @@ for txt_path in txt_files:
     mask_image = Image.open(mask_image_path).convert("RGB")
     target_image = Image.open(target_image_path).convert("RGB")
 
+    width, height = input_image.size
     image = pipe(
         prompt=prompt,
-        height=832,
-        width=1248,
+        height=height,
+        width=width,
         image=[input_image, mask_image],
         num_inference_steps=50,
         guidance_scale=4.0,
