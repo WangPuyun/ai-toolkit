@@ -1,7 +1,7 @@
 {
   "job": "extension",
   "config": {
-    "name": "Flux2_klein_base_4b_v1",
+    "name": "v1",
     "process": [
       {
         "type": "diffusion_trainer",
@@ -85,7 +85,7 @@
           "diff_output_preservation_multiplier": 1,
           "diff_output_preservation_class": "person",
           "switch_boundary_every": 1,
-          "loss_type": "custom_loss"
+          "loss_type": "mse"
         },
         "logging": {
           "log_every": 1,
