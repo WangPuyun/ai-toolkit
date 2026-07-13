@@ -1,3 +1,4 @@
+import argparse
 import glob
 import os
 
@@ -12,8 +13,11 @@ from PIL import Image
 from torchmetrics.image.fid import FrechetInceptionDistance
 
 
-MODEL_PATH = "/root/autodl-tmp/models/flux-klein-base-4b"
-LORA_PATH = "/root/autodl-tmp/ai-toolkit/output/Flux2_lora_v6_mask/Flux2_lora_v6_mask.safetensors"
+MODELS_ROOT = "/root/autodl-tmp/models"
+LORA_ROOT = "/root/autodl-tmp/ai-toolkit/output"
+
+DEFAULT_MODEL_NAME = "flux-klein-base-4b"
+DEFAULT_LORA_NAME = "v1"
 
 CONTROL1_DIR = "/root/autodl-tmp/ai-toolkit/datasets/test_control1"
 MASK_DIR = "/root/autodl-tmp/ai-toolkit/datasets/test_control3"
@@ -50,7 +54,7 @@ def get_face_embedding(face_app, image):
     return face_app.get(image_cv2)[0].embedding
 
 
-def run_worker(rank, world_size, txt_files):
+def run_worker(rank, world_size, txt_files, model_path, lora_path):
     device = get_device(rank)
     local_txt_files = txt_files[rank::world_size]
 
@@ -68,10 +72,10 @@ def run_worker(rank, world_size, txt_files):
         }
 
     pipe = Flux2KleinPipeline.from_pretrained(
-        MODEL_PATH,
+        model_path,
         torch_dtype=torch.bfloat16,
     )
-    pipe.load_lora_weights(LORA_PATH)
+    pipe.load_lora_weights(lora_path)
     pipe.to(device)
 
     loss_fn = lpips.LPIPS(net="vgg").to(device)
@@ -142,8 +146,8 @@ def run_worker(rank, world_size, txt_files):
     }
 
 
-def worker_entry(rank, world_size, txt_files, result_queue):
-    result_queue.put(run_worker(rank, world_size, txt_files))
+def worker_entry(rank, world_size, txt_files, result_queue, model_path, lora_path):
+    result_queue.put(run_worker(rank, world_size, txt_files, model_path, lora_path))
 
 
 def compute_fid(txt_files, device):
@@ -165,14 +169,14 @@ def compute_fid(txt_files, device):
     return fid.compute().item()
 
 
-def run_all_workers(world_size, txt_files):
+def run_all_workers(world_size, txt_files, model_path, lora_path):
     if world_size == 1:
-        return [run_worker(0, world_size, txt_files)]
+        return [run_worker(0, world_size, txt_files, model_path, lora_path)]
 
     ctx = mp.get_context("spawn")
     result_queue = ctx.Queue()
     processes = [
-        ctx.Process(target=worker_entry, args=(rank, world_size, txt_files, result_queue))
+        ctx.Process(target=worker_entry, args=(rank, world_size, txt_files, result_queue, model_path, lora_path))
         for rank in range(world_size)
     ]
 
@@ -188,8 +192,21 @@ def run_all_workers(world_size, txt_files):
 
     return [result_queue.get() for _ in processes]
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Multi-GPU Flux2Klein inference and evaluation")
+    parser.add_argument("--model-name", default=DEFAULT_MODEL_NAME,
+                        help=f"Subdirectory under {MODELS_ROOT} (e.g. flux-klein-base-4b, flux-klein-base-9b)",)
+    parser.add_argument("--lora-name", default=DEFAULT_LORA_NAME,
+                    help=f"Subdirectory under {LORA_ROOT} (expects <name>/<name>.safetensors inside)",)
+
+    return parser.parse_args()
 
 def main():
+    args = parse_args()
+
+    model_path = f"{MODELS_ROOT}/{args.model_name}"
+    lora_path = f"{LORA_ROOT}/{args.lora_name}/{args.lora_name}.safetensors"
+
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     txt_files = sorted(glob.glob(os.path.join(CONTROL1_DIR, "*.txt")))
 
@@ -203,7 +220,7 @@ def main():
     print(f"Found {len(txt_files)} prompts.")
     print(f"Detected {gpu_count} CUDA GPU(s). Starting {world_size} worker process(es).")
 
-    results = run_all_workers(world_size, txt_files)
+    results = run_all_workers(world_size, txt_files, model_path, lora_path)
     total_count = sum(result["count"] for result in results)
 
     if total_count == 0:
