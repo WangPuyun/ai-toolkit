@@ -82,7 +82,7 @@ class SDTrainer(BaseSDTrainProcess):
         self.diff_output_preservation_embeds: Optional[PromptEmbeds] = None
         
         self.dfe: Optional[DiffusionFeatureExtractor] = None
-        self.custom_loss = CustomLoss(mse_weight=1.0, l1_weight=1.0)
+        self.custom_loss = CustomLoss(mse_weight=1.0, wave_weight=1.0)
         self.unconditional_embeds = None
         
         if self.train_config.diff_output_preservation:
@@ -804,7 +804,7 @@ class SDTrainer(BaseSDTrainProcess):
                 # the way this loss works, it is low, increase it to match predictable LR effects
                 loss = loss * 10.0
             elif self.train_config.loss_type == "custom_loss":
-                loss = self.custom_loss(pred, target)
+                loss = self.custom_loss(pred, target, batch.latents, noise)
             else:
                 loss = torch.nn.functional.mse_loss(pred.float(), target.float(), reduction="none")
                 
